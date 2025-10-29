@@ -187,6 +187,7 @@ JSON形式で回答してください:
         });
         
         const candidate = nextQuestionResponse.choices[0].message.content || "";
+        console.log(`GPT-5 response (attempt ${attempts + 1}): "${candidate}"`);
         const validation = validateSingleQuestion(candidate);
         
         if (validation.isValid) {
@@ -212,12 +213,13 @@ JSON形式で回答してください:
             });
             
             const fallbackCandidate = fallbackResponse.choices[0].message.content || "";
+            console.log(`GPT-5 fallback response: "${fallbackCandidate}"`);
             const fallbackValidation = validateSingleQuestion(fallbackCandidate);
             
             if (fallbackValidation.isValid) {
               responseContent = fallbackCandidate;
             } else {
-              console.error(`Even fallback failed validation. Using minimal fallback.`);
+              console.error(`Even fallback failed validation. Reason: ${fallbackValidation.reason}. Using minimal fallback.`);
               responseContent = "症状は続いていますか？";
             }
           }
