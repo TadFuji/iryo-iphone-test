@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && (import.meta.env.PROD || location.protocol === 'https:')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')
@@ -10,7 +10,7 @@ if ('serviceWorker' in navigator) {
         console.log('Service Worker registered successfully:', registration.scope);
       })
       .catch((error) => {
-        console.log('Service Worker registration failed:', error);
+        console.error('Service Worker registration failed:', error);
       });
   });
 }
