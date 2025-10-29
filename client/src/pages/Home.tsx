@@ -114,54 +114,32 @@ export default function Home() {
     },
   });
 
-  const handleAcceptDisclaimer = async () => {
+  const handleAcceptDisclaimer = () => {
     setShowDisclaimer(false);
     
-    try {
-      const res = await apiRequest(
-        "POST",
-        "/api/chat",
-        {
-          conversationId: null,
-          message: "問診を開始してください",
-        }
-      );
-
-      const response: ChatResponse = await res.json();
-
-      if (!response.userMessage || !response.assistantMessage) {
-        throw new Error("サーバーからの応答が不完全です");
-      }
-
-      setConversationId(response.conversationId);
-      setQuestionCount(response.questionCount);
-      setConfidence(response.confidence);
-      setIsEmergency(response.isEmergency);
-      setIsComplete(response.isComplete);
-      
-      const newMessages = [response.userMessage, response.assistantMessage];
-      setMessages(newMessages);
-      
-      const newState: ConversationState = {
-        id: response.conversationId,
-        messages: newMessages,
-        questionCount: response.questionCount,
-        confidence: response.confidence,
-        isEmergency: response.isEmergency,
-        status: response.isComplete ? "completed" : response.isEmergency ? "emergency" : "active",
-        finalReport: response.finalReport,
-      };
-      
-      localStorage.setItem("medicalConsultation", JSON.stringify(newState));
-    } catch (error) {
-      console.error("Failed to start consultation:", error);
-      toast({
-        variant: "destructive",
-        title: "エラーが発生しました",
-        description: error instanceof Error ? error.message : "問診の開始に失敗しました。もう一度お試しください。",
-      });
-      setShowDisclaimer(true);
-    }
+    const initialMessage: Message = {
+      id: `msg-${Date.now()}`,
+      role: "assistant",
+      content: "まず、現在最もお困りの症状は何ですか？一つ教えてください。",
+      timestamp: Date.now(),
+    };
+    
+    setMessages([initialMessage]);
+    setQuestionCount(0);
+    setConfidence(0);
+    
+    const tempId = `temp-${Date.now()}`;
+    const newState: ConversationState = {
+      id: tempId,
+      messages: [initialMessage],
+      questionCount: 0,
+      confidence: 0,
+      isEmergency: false,
+      status: "active",
+      finalReport: undefined,
+    };
+    
+    localStorage.setItem("medicalConsultation", JSON.stringify(newState));
   };
 
   const handleSendMessage = (message: string) => {
