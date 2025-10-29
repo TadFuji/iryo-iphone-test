@@ -110,6 +110,8 @@ export async function analyzeMedicalConsultation(
   questionCount: number
 ): Promise<ConsultationAnalysis> {
   try {
+    console.log(`[Medical Consultation] Starting analysis. Question count: ${questionCount}, Messages: ${messages.length}`);
+    
     const conversationMessages = messages
       .filter((m) => m.role !== "system")
       .map((m) => ({
@@ -148,7 +150,7 @@ JSON形式で回答してください:
 
     const analysis = JSON.parse(analysisResponse.choices[0].message.content || "{}");
 
-    let responseContent: string;
+    let responseContent = "症状は続いていますか？"; // デフォルト値
 
     if (analysis.isEmergency) {
       responseContent = "緊急性が高い状態です。直ちに救急車を呼ぶか、最寄りの救急外来を受診してください。";
@@ -171,57 +173,66 @@ JSON形式で回答してください:
       const maxAttempts = 3;
       
       while (attempts < maxAttempts) {
-        const nextQuestionResponse = await openai.chat.completions.create({
-          model: "gpt-5",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...conversationMessages,
-            {
-              role: "user",
-              content: attempts === 0
-                ? "次の質問を1つだけ、必ず200文字以内で生成してください。複数の質問をしないでください。共感の言葉も含めて200文字以内に収めてください。"
-                : `前回の応答が要件を満たしていませんでした。もう一度、次の質問を1つだけ、200文字以内で生成してください。文字数を厳守し、質問は1つのみにしてください。`,
-            },
-          ],
-          max_completion_tokens: 300,
-        });
-        
-        const candidate = nextQuestionResponse.choices[0].message.content || "";
-        console.log(`GPT-5 response (attempt ${attempts + 1}): "${candidate}"`);
-        const validation = validateSingleQuestion(candidate);
-        
-        if (validation.isValid) {
-          responseContent = candidate;
-          break;
-        } else {
-          console.warn(`GPT-5 response validation failed (attempt ${attempts + 1}/${maxAttempts}): ${validation.reason}`);
-          attempts++;
+        try {
+          const nextQuestionResponse = await openai.chat.completions.create({
+            model: "gpt-5",
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              ...conversationMessages,
+              {
+                role: "user",
+                content: attempts === 0
+                  ? "次の質問を1つだけ、必ず200文字以内で生成してください。複数の質問をしないでください。共感の言葉も含めて200文字以内に収めてください。"
+                  : `前回の応答が要件を満たしていませんでした。もう一度、次の質問を1つだけ、200文字以内で生成してください。文字数を厳守し、質問は1つのみにしてください。`,
+              },
+            ],
+            max_completion_tokens: 300,
+          });
           
-          if (attempts >= maxAttempts) {
-            console.error(`Failed to get valid response after ${maxAttempts} attempts. Requesting a simple fallback question.`);
-            const fallbackResponse = await openai.chat.completions.create({
-              model: "gpt-5",
-              messages: [
-                { role: "system", content: SYSTEM_PROMPT },
-                ...conversationMessages,
-                {
-                  role: "user",
-                  content: "前回の応答が要件を満たしませんでした。非常にシンプルな質問を1つだけ、100文字以内で生成してください。例：「痛みは続いていますか」",
-                },
-              ],
-              max_completion_tokens: 150,
-            });
+          const candidate = nextQuestionResponse.choices[0].message.content || "";
+          console.log(`GPT-5 response (attempt ${attempts + 1}): "${candidate}"`);
+          const validation = validateSingleQuestion(candidate);
+        
+          if (validation.isValid) {
+            responseContent = candidate;
+            break;
+          } else {
+            console.warn(`GPT-5 response validation failed (attempt ${attempts + 1}/${maxAttempts}): ${validation.reason}`);
+            attempts++;
             
-            const fallbackCandidate = fallbackResponse.choices[0].message.content || "";
-            console.log(`GPT-5 fallback response: "${fallbackCandidate}"`);
-            const fallbackValidation = validateSingleQuestion(fallbackCandidate);
-            
-            if (fallbackValidation.isValid) {
-              responseContent = fallbackCandidate;
-            } else {
-              console.error(`Even fallback failed validation. Reason: ${fallbackValidation.reason}. Using minimal fallback.`);
-              responseContent = "症状は続いていますか？";
+            if (attempts >= maxAttempts) {
+              console.error(`Failed to get valid response after ${maxAttempts} attempts. Requesting a simple fallback question.`);
+              const fallbackResponse = await openai.chat.completions.create({
+                model: "gpt-5",
+                messages: [
+                  { role: "system", content: SYSTEM_PROMPT },
+                  ...conversationMessages,
+                  {
+                    role: "user",
+                    content: "前回の応答が要件を満たしませんでした。非常にシンプルな質問を1つだけ、100文字以内で生成してください。例：「痛みは続いていますか」",
+                  },
+                ],
+                max_completion_tokens: 150,
+              });
+              
+              const fallbackCandidate = fallbackResponse.choices[0].message.content || "";
+              console.log(`GPT-5 fallback response: "${fallbackCandidate}"`);
+              const fallbackValidation = validateSingleQuestion(fallbackCandidate);
+              
+              if (fallbackValidation.isValid) {
+                responseContent = fallbackCandidate;
+              } else {
+                console.error(`Even fallback failed validation. Reason: ${fallbackValidation.reason}. Using minimal fallback.`);
+                responseContent = "症状は続いていますか？";
+              }
             }
+          }
+        } catch (apiError) {
+          console.error(`OpenAI API error (attempt ${attempts + 1}/${maxAttempts}):`, apiError);
+          attempts++;
+          if (attempts >= maxAttempts) {
+            console.error("All attempts failed. Using fallback question.");
+            responseContent = "症状は続いていますか？";
           }
         }
       }
