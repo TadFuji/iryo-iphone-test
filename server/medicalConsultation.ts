@@ -138,7 +138,7 @@ JSON形式で回答してください:
 }`;
 
     const analysisResponse = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         ...conversationMessages,
@@ -156,7 +156,7 @@ JSON形式で回答してください:
       responseContent = "緊急性が高い状態です。直ちに救急車を呼ぶか、最寄りの救急外来を受診してください。";
     } else if (analysis.shouldComplete) {
       const reportResponse = await openai.chat.completions.create({
-        model: "gpt-5",
+        model: "gpt-4o",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           ...conversationMessages,
@@ -175,7 +175,7 @@ JSON形式で回答してください:
       while (attempts < maxAttempts) {
         try {
           const nextQuestionResponse = await openai.chat.completions.create({
-            model: "gpt-5",
+            model: "gpt-4o",
             messages: [
               { role: "system", content: SYSTEM_PROMPT },
               ...conversationMessages,
@@ -203,7 +203,7 @@ JSON形式で回答してください:
             if (attempts >= maxAttempts) {
               console.error(`Failed to get valid response after ${maxAttempts} attempts. Requesting a simple fallback question.`);
               const fallbackResponse = await openai.chat.completions.create({
-                model: "gpt-5",
+                model: "gpt-4o",
                 messages: [
                   { role: "system", content: SYSTEM_PROMPT },
                   ...conversationMessages,
