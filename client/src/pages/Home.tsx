@@ -65,7 +65,7 @@ export default function Home() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (userMessage: string) => {
-      const response = await apiRequest<ChatResponse>(
+      const res = await apiRequest(
         "POST",
         "/api/chat",
         {
@@ -74,6 +74,7 @@ export default function Home() {
         }
       );
 
+      const response: ChatResponse = await res.json();
       return response;
     },
     onSuccess: (response) => {
