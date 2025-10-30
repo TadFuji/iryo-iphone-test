@@ -111,7 +111,35 @@ OpenAI GPT-4oを使用した高精度医療問診AIのiPhone対応PWA（Progress
 - セーフエリア対応
 
 ## 最近の変更
-- 2025-10-29: 初期実装完了 + PWA対応
+
+### 2025-10-30: Capacitorネイティブアプリ化成功
+  - **目的**: ネイティブiOS開発の学習、個人iPhoneでのテスト（7日間制限）
+  - **技術スタック追加**:
+    * @capacitor/core, @capacitor/cli, @capacitor/ios インストール
+    * capacitor.config.ts 作成（webDir: 'dist/public', server.url: Replit URL）
+  - **iOS プロジェクト生成**:
+    * `npx cap add ios` でネイティブiOSプロジェクト作成
+    * iosフォルダをMacにダウンロード
+  - **CocoaPods問題解決**:
+    * Podfileをシンプル化（node_modules依存を削除）
+    * ViewController.swift作成（WKWebViewでReplit URLをロード）
+    * AppDelegate.swift修正（Capacitor依存削除、ViewControllerを設定）
+    * Info.plist更新（NSAppTransportSecurity追加）
+  - **Xcodeビルド成功**:
+    * 署名設定（無料Apple ID、自動署名管理）
+    * iPhone実機ビルド・インストール成功
+  - **アプリ構成**:
+    * ハイブリッドアプリ（UIはネイティブ、バックエンドはReplit）
+    * インターネット接続必須
+    * 7日間有効（無料Apple ID制限）
+  - **ファイル構成**:
+    * ios/App/App/ViewController.swift: WebViewコントローラー
+    * ios/App/App/AppDelegate.swift: アプリエントリーポイント
+    * ios/App/App/Info.plist: アプリメタデータ、権限設定
+    * ios/App/Podfile: CocoaPods依存管理（簡略版）
+  - **結果**: iPhoneネイティブアプリとして完全動作、問診機能正常
+
+### 2025-10-29: 初期実装完了 + PWA対応
   - フロントエンド全コンポーネント作成
   - バックエンドAPI実装
   - OpenAI GPT-4o統合（gpt-5→gpt-4o修正）
